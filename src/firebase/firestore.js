@@ -8,6 +8,7 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 import { db } from "./config";
+import { getAuth } from 'firebase/auth';
 
 const INVENTORY_COLLECTION = "inventory";
 
@@ -32,9 +33,24 @@ export const fetchInventoryItem = async (itemId) => {
   }
 };
 
+const AUDIT_COLLECTION = 'inventory_audit';
+
+async function logAudit(itemId, action, data) {
+  const auth = getAuth();
+  const user = auth.currentUser;
+  await addDoc(collection(db, AUDIT_COLLECTION), {
+    itemId,
+    action,
+    timestamp: new Date().toISOString(),
+    userId: user ? user.uid : null,
+    data
+  });
+}
+
 // Add a new inventory item
 export const addInventoryItem = async (itemData) => {
   const docRef = await addDoc(collection(db, INVENTORY_COLLECTION), itemData);
+  await logAudit(docRef.id, 'add', itemData);
   return docRef.id;
 };
 
@@ -42,12 +58,17 @@ export const addInventoryItem = async (itemData) => {
 export const updateInventoryItem = async (itemId, itemData) => {
   const docRef = doc(db, INVENTORY_COLLECTION, itemId);
   await updateDoc(docRef, itemData);
+  await logAudit(itemId, 'edit', itemData);
 };
 
 // Delete an inventory item
 export const deleteInventoryItem = async (itemId) => {
   const docRef = doc(db, INVENTORY_COLLECTION, itemId);
+  // Fetch item data before deleting for audit
+  const itemSnap = await getDoc(docRef);
+  const itemData = itemSnap.exists() ? itemSnap.data() : {};
   await deleteDoc(docRef);
+  await logAudit(itemId, 'delete', itemData);
 };
 
 // === CATEGORY LOGIC ===
@@ -85,3 +106,26 @@ export const fetchTransactions = async () => {
 
 // === REPORTS PLACEHOLDER ===
 // Future: Add aggregation functions for reports
+
+// === SUPPLIER LOGIC ===
+const SUPPLIER_COLLECTION = "suppliers";
+
+export const fetchSuppliers = async () => {
+  const snapshot = await getDocs(collection(db, SUPPLIER_COLLECTION));
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+};
+
+export const addSupplier = async (supplierData) => {
+  const docRef = await addDoc(collection(db, SUPPLIER_COLLECTION), supplierData);
+  return docRef.id;
+};
+
+export const updateSupplier = async (supplierId, supplierData) => {
+  const docRef = doc(db, SUPPLIER_COLLECTION, supplierId);
+  await updateDoc(docRef, supplierData);
+};
+
+export const deleteSupplier = async (supplierId) => {
+  const docRef = doc(db, SUPPLIER_COLLECTION, supplierId);
+  await deleteDoc(docRef);
+};

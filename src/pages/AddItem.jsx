@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { addInventoryItem } from '../firebase/firestore';
 import { FaArrowLeft, FaPlus, FaSpinner } from 'react-icons/fa';
 import '../styles/global.css';
+import QrBarcodeScanner from 'react-qr-barcode-scanner';
 
 export default function AddItem() {
   const [itemData, setItemData] = useState({
@@ -16,6 +17,7 @@ export default function AddItem() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const [showScanner, setShowScanner] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -23,6 +25,13 @@ export default function AddItem() {
       ...prevData,
       [name]: value,
     }));
+  };
+
+  const handleScan = (result) => {
+    if (result) {
+      setItemData(prev => ({ ...prev, name: result.text }));
+      setShowScanner(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -74,6 +83,17 @@ export default function AddItem() {
           </h5>
         </div>
         <div className="card-body p-4">
+          {showScanner && (
+            <div className="mb-3">
+              <QrBarcodeScanner
+                onUpdate={(err, result) => {
+                  if (result) handleScan(result);
+                }}
+                style={{ width: '100%' }}
+              />
+              <button className="btn btn-secondary mt-2" onClick={() => setShowScanner(false)}>Close Scanner</button>
+            </div>
+          )}
           {error && (
             <div className="alert alert-danger d-flex align-items-center" role="alert">
               <div className="me-2">
@@ -85,19 +105,22 @@ export default function AddItem() {
           <form onSubmit={handleSubmit}>
             <div className="row">
               <div className="col-md-6 mb-4">
-                <div className="form-group">
-                  <label className="form-label fw-medium">Item Name *</label>
-                  <input
-                    type="text"
-                    name="name"
-                    className="form-control form-control-lg"
-                    placeholder="Enter item name"
-                    value={itemData.name}
-                    onChange={handleChange}
-                    required
-                    disabled={loading}
-                  />
+                <div className="form-group d-flex align-items-center gap-2">
+                  <label className="form-label fw-medium mb-0">Item Name *</label>
+                  <button type="button" className="btn btn-outline-info btn-sm" onClick={() => setShowScanner(true)}>
+                    Scan Barcode/QR
+                  </button>
                 </div>
+                <input
+                  type="text"
+                  name="name"
+                  className="form-control form-control-lg"
+                  placeholder="Enter item name"
+                  value={itemData.name}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
+                />
               </div>
               <div className="col-md-6 mb-4">
                 <div className="form-group">

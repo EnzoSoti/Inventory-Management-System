@@ -1,11 +1,62 @@
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from "../context/AuthContext";
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const [showWelcome, setShowWelcome] = useState(false);
+  const getStartedRef = useRef();
+  const modalRef = useRef();
+
+  useEffect(() => {
+    if (!localStorage.getItem('onboarded')) {
+      setShowWelcome(true);
+      localStorage.setItem('onboarded', 'yes');
+    }
+  }, []);
+
+  useEffect(() => {
+    if (showWelcome && modalRef.current) {
+      modalRef.current.focus();
+    }
+  }, [showWelcome]);
+
+  const closeWelcome = () => {
+    setShowWelcome(false);
+    if (getStartedRef.current) getStartedRef.current.focus();
+  };
 
   return (
     <div className="container py-5 fade-in">
+      {/* Onboarding Welcome Modal */}
+      {showWelcome && (
+        <div className="modal fade show d-block" tabIndex="-1" style={{ background: 'rgba(0,0,0,0.4)' }}
+          role="dialog" aria-modal="true" aria-labelledby="welcomeTitle" ref={modalRef}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title" id="welcomeTitle">Welcome to Inventory Management System!</h5>
+                <button type="button" className="btn-close" aria-label="Close" onClick={closeWelcome}></button>
+              </div>
+              <div className="modal-body">
+                <ul className="mb-3">
+                  <li>🌟 <b>Add Items</b> to your inventory with the green button.</li>
+                  <li>🔍 <b>Search & Filter</b> inventory instantly.</li>
+                  <li>⚠️ <b>Stock Alerts</b> highlight low/out-of-stock items.</li>
+                  <li>⬆️ <b>Import/Export CSV</b> for bulk management.</li>
+                  <li>📦 <b>Suppliers</b> management and linking.</li>
+                  <li>📊 <b>Reports</b> and analytics for insights.</li>
+                  <li>🌙 <b>Theme Switcher</b> for dark/light mode.</li>
+                </ul>
+                <p className="mb-0">Explore the navigation bar to access all features. Enjoy!</p>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-primary" ref={getStartedRef} onClick={closeWelcome}>Get Started</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="text-center mb-5">
         <h1 className="fw-bold mb-2" style={{ color: 'var(--primary-color)' }}>
           Welcome, {user?.email}

@@ -11,6 +11,8 @@ import EditItem from './pages/EditItem';
 import Reports from './pages/Reports';
 import Transactions from './pages/Transactions';
 import NavBar from './components/NavBar';
+import Suppliers from './pages/Suppliers';
+import { ThemeProvider } from './context/ThemeContext';
 
 function AppRoutes() {
   const { user } = useAuth();
@@ -34,6 +36,7 @@ function AppRoutes() {
       <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
       <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
       <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+      <Route path="/suppliers" element={<ProtectedRoute><Suppliers /></ProtectedRoute>} />
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
@@ -42,10 +45,12 @@ function AppRoutes() {
 function App() {
   const { user } = useAuth();
   return (
-    <Router>
-      {user && <NavBar />}
-      <AppRoutes />
-    </Router>
+    <ThemeProvider>
+      <Router>
+        {user && <NavBar />}
+        <AppRoutes />
+      </Router>
+    </ThemeProvider>
   );
 }
 

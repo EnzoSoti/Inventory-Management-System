@@ -1,11 +1,39 @@
 import { useEffect, useState } from "react";
 import { Link } from 'react-router-dom';
-import { fetchInventoryItems, deleteInventoryItem } from "../firebase/firestore";
+import { fetchInventoryItems, deleteInventoryItem, addInventoryItem } from "../firebase/firestore";
+import Papa from 'papaparse';
+import emailjs from 'emailjs-com';
+
+function exportToCSV(items) {
+  if (!items.length) return;
+  const header = ["Name", "Category", "Quantity", "Price", "Supplier"];
+  const rows = items.map(item => [
+    item.name,
+    item.category,
+    item.quantity,
+    item.price,
+    item.supplier
+  ]);
+  const csvContent = [header, ...rows]
+    .map(e => e.map(v => `"${(v ?? '').toString().replace(/"/g, '""')}"`).join(","))
+    .join("\n");
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', 'inventory.csv');
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
 
 export default function InventoryList() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [search, setSearch] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [importMessage, setImportMessage] = useState("");
 
   const loadItems = async () => {
     try {
@@ -37,6 +65,78 @@ export default function InventoryList() {
     }
   };
 
+  const handleImportCSV = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setImporting(true);
+    setImportMessage("");
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        let success = 0, fail = 0;
+        for (const row of results.data) {
+          // Basic validation
+          if (!row.Name || !row.Category || !row.Quantity) {
+            fail++;
+            continue;
+          }
+          try {
+            await addInventoryItem({
+              name: row.Name,
+              category: row.Category,
+              quantity: Number(row.Quantity),
+              price: row.Price ? Number(row.Price) : 0,
+              supplier: row.Supplier || "",
+              description: row.Description || "",
+              lastUpdated: new Date().toISOString()
+            });
+            success++;
+          } catch {
+            fail++;
+          }
+        }
+        setImportMessage(`Imported: ${success} items. Failed: ${fail} rows.`);
+        setImporting(false);
+        loadItems();
+      },
+      error: () => {
+        setImportMessage("Failed to parse CSV file.");
+        setImporting(false);
+      }
+    });
+  };
+
+  const sendLowStockAlert = async (item) => {
+    try {
+      await emailjs.send(
+        'YOUR_SERVICE_ID',
+        'YOUR_TEMPLATE_ID',
+        {
+          item_name: item.name,
+          item_category: item.category,
+          item_quantity: item.quantity,
+          item_supplier: item.supplier,
+          to_email: 'YOUR_EMAIL@example.com',
+        },
+        'YOUR_USER_ID'
+      );
+      setImportMessage(`Low stock alert sent for ${item.name}`);
+    } catch (e) {
+      setImportMessage('Failed to send alert.');
+    }
+  };
+
+  // Filter items by search
+  const filteredItems = items.filter(item => {
+    const q = search.toLowerCase();
+    return (
+      item.name.toLowerCase().includes(q) ||
+      item.category.toLowerCase().includes(q) ||
+      (item.supplier && item.supplier.toLowerCase().includes(q))
+    );
+  });
+
   if (loading) return <div className="container mt-5"><p>Loading inventory...</p></div>;
   if (error) return <div className="container mt-5 alert alert-danger">Error: {error}</div>;
 
@@ -46,9 +146,37 @@ export default function InventoryList() {
         <h1 className="fw-bold" style={{ color: 'var(--primary-color)' }}>
           Inventory
         </h1>
-        <Link to="/inventory/add" className="btn btn-success">
-          Add Item
-        </Link>
+        <div className="d-flex gap-2">
+          <button className="btn btn-outline-primary" onClick={() => exportToCSV(filteredItems)}>
+            Export CSV
+          </button>
+          <label className="btn btn-outline-success mb-0">
+            Import CSV
+            <input type="file" accept=".csv" onChange={handleImportCSV} style={{ display: 'none' }} disabled={importing} />
+          </label>
+          <Link to="/inventory/add" className="btn btn-success">
+            Add Item
+          </Link>
+        </div>
+        {importMessage && (
+          <div className={`alert ${importMessage.includes('Failed') ? 'alert-warning' : 'alert-success'} mt-2`}>
+            {importMessage}
+          </div>
+        )}
+      </div>
+      <div className="mb-3">
+        <input
+          type="text"
+          className="form-control form-control-lg"
+          placeholder="Search by name, category, or supplier..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
+      </div>
+      {/* Stock Alert Legend */}
+      <div className="mb-2 d-flex gap-3 align-items-center">
+        <span><span className="badge bg-danger">Out of Stock</span></span>
+        <span><span className="badge bg-warning text-dark">Low Stock (≤5)</span></span>
       </div>
       <table className="table table-bordered table-striped">
         <thead className="table-dark">
@@ -62,27 +190,40 @@ export default function InventoryList() {
           </tr>
         </thead>
         <tbody>
-          {items.length === 0 ? (
+          {filteredItems.length === 0 ? (
             <tr>
               <td colSpan="6" className="text-center">
                 No items found.
               </td>
             </tr>
           ) : (
-            items.map(item => (
+            filteredItems.map(item => (
               <tr key={item.id}>
                 <td>{item.name}</td>
                 <td>{item.category}</td>
-                <td>{item.quantity}</td>
+                <td>
+                  {item.quantity === 0 ? (
+                    <span className="badge bg-danger">0</span>
+                  ) : item.quantity <= 5 ? (
+                    <span className="badge bg-warning text-dark">{item.quantity}</span>
+                  ) : (
+                    item.quantity
+                  )}
+                </td>
                 <td>₱{item.price ? item.price.toLocaleString() : 'N/A'}</td>
                 <td>{item.supplier}</td>
                 <td>
                   <Link to={`/inventory/edit/${item.id}`} className="btn btn-sm btn-warning me-2">
                     Edit
                   </Link>
-                  <button onClick={() => handleDelete(item.id)} className="btn btn-sm btn-danger">
+                  <button onClick={() => handleDelete(item.id)} className="btn btn-sm btn-danger me-2">
                     Delete
                   </button>
+                  {(item.quantity === 0 || item.quantity <= 5) && (
+                    <button className="btn btn-sm btn-outline-info" onClick={() => sendLowStockAlert(item)}>
+                      Send Low Stock Alert
+                    </button>
+                  )}
                 </td>
               </tr>
             ))

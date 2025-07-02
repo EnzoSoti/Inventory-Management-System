@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchInventoryItems, fetchCategories, fetchTransactions } from '../firebase/firestore';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 
 export default function Reports() {
   const [totals, setTotals] = useState({ items: 0, categories: 0, transactions: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [categoryData, setCategoryData] = useState([]);
 
   useEffect(() => {
     const load = async () => {
@@ -17,6 +19,15 @@ export default function Reports() {
           fetchTransactions()
         ]);
         setTotals({ items: items.length, categories: categories.length, transactions: transactions.length });
+        // Calculate inventory value by category
+        const catMap = {};
+        items.forEach(item => {
+          const cat = item.category || 'Uncategorized';
+          const value = (item.price || 0) * (item.quantity || 0);
+          if (!catMap[cat]) catMap[cat] = 0;
+          catMap[cat] += value;
+        });
+        setCategoryData(Object.entries(catMap).map(([name, value]) => ({ name, value })));
         setError('');
       } catch {
         setError('Failed to load report data.');
@@ -36,7 +47,7 @@ export default function Reports() {
           Back to Inventory
         </Link>
       </div>
-      <div className="card shadow p-4">
+      <div className="card shadow p-4 mb-4">
         {error && <div className="alert alert-danger">{error}</div>}
         {loading ? (
           <div>Loading...</div>
@@ -68,6 +79,20 @@ export default function Reports() {
             </div>
           </div>
         )}
+      </div>
+      {/* Inventory Value by Category Chart */}
+      <div className="card shadow p-4">
+        <h5 className="mb-4">Inventory Value by Category</h5>
+        <ResponsiveContainer width="100%" height={320}>
+          <BarChart data={categoryData} margin={{ top: 16, right: 16, left: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" />
+            <YAxis />
+            <Tooltip formatter={v => `₱${v.toLocaleString()}`} />
+            <Legend />
+            <Bar dataKey="value" fill="#4361ee" name="Total Value" />
+          </BarChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );
