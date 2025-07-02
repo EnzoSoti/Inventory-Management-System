@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { fetchInventoryItem, updateInventoryItem } from '../firebase/firestore';
+import { fetchInventoryItem, updateInventoryItem, fetchSuppliers } from '../firebase/firestore';
 
 export default function EditItem() {
   const [itemData, setItemData] = useState({
@@ -14,6 +14,8 @@ export default function EditItem() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const { itemId } = useParams();
+  const [suppliers, setSuppliers] = useState([]);
+  const [customSupplier, setCustomSupplier] = useState('');
 
   useEffect(() => {
     const loadItem = async () => {
@@ -28,6 +30,15 @@ export default function EditItem() {
       }
     };
     loadItem();
+    async function loadSuppliers() {
+      try {
+        const data = await fetchSuppliers();
+        setSuppliers(data);
+      } catch (e) {
+        // Optionally handle error
+      }
+    }
+    loadSuppliers();
   }, [itemId]);
 
   const handleChange = (e) => {
@@ -42,20 +53,19 @@ export default function EditItem() {
     e.preventDefault();
     setLoading(true);
     setError('');
-
     const quantity = Number(itemData.quantity);
     const price = Number(itemData.price);
-
+    let supplierValue = itemData.supplier === '__custom__' ? customSupplier : itemData.supplier;
     if (quantity < 0 || price < 0) {
       setError("Quantity and Price cannot be negative.");
       setLoading(false);
       return;
     }
-
     try {
       const { id, ...dataToUpdate } = itemData;
       await updateInventoryItem(itemId, {
         ...dataToUpdate,
+        supplier: supplierValue,
         quantity,
         price,
       });
@@ -136,14 +146,28 @@ export default function EditItem() {
           </div>
           <div className="mb-3">
             <label className="form-label">Supplier</label>
-            <input
-              type="text"
+            <select
               name="supplier"
-              className="form-control"
+              className="form-control mb-2"
               value={itemData.supplier}
-              onChange={handleChange}
+              onChange={e => setItemData(prev => ({ ...prev, supplier: e.target.value }))}
               disabled={loading}
-            />
+            >
+              {suppliers.map(supplier => (
+                <option key={supplier.id} value={supplier.name}>{supplier.name}</option>
+              ))}
+              <option value="__custom__">Other (Enter manually)</option>
+            </select>
+            {itemData.supplier === '__custom__' && (
+              <input
+                type="text"
+                className="form-control mt-2"
+                placeholder="Enter supplier name"
+                value={customSupplier}
+                onChange={e => setCustomSupplier(e.target.value)}
+                disabled={loading}
+              />
+            )}
           </div>
           <div className="d-flex gap-2">
             <button type="submit" className="btn btn-primary" disabled={loading}>

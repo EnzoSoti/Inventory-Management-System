@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { fetchInventoryItems, deleteInventoryItem, addInventoryItem } from "../firebase/firestore";
 import Papa from 'papaparse';
 import emailjs from 'emailjs-com';
+import { fetchExternalProducts } from '../api/externalProducts';
 
 function exportToCSV(items) {
   if (!items.length) return;
@@ -34,6 +35,10 @@ export default function InventoryList() {
   const [search, setSearch] = useState("");
   const [importing, setImporting] = useState(false);
   const [importMessage, setImportMessage] = useState("");
+  const [apiProducts, setApiProducts] = useState([]);
+  const [showApiModal, setShowApiModal] = useState(false);
+  const [apiLoading, setApiLoading] = useState(false);
+  const [apiError, setApiError] = useState("");
 
   const loadItems = async () => {
     try {
@@ -127,6 +132,36 @@ export default function InventoryList() {
     }
   };
 
+  const handleImportFromAPI = async () => {
+    setApiLoading(true);
+    setApiError("");
+    try {
+      const products = await fetchExternalProducts();
+      setApiProducts(products);
+      setShowApiModal(true);
+    } catch (e) {
+      setApiError("Failed to fetch products from external API.");
+    }
+    setApiLoading(false);
+  };
+
+  const handleImportProduct = async (product) => {
+    try {
+      await addInventoryItem({
+        name: product.title || product.name,
+        category: product.category || 'External',
+        quantity: 1,
+        price: product.price || 0,
+        supplier: product.brand || '',
+        description: product.description || '',
+        lastUpdated: new Date().toISOString()
+      });
+      setImportMessage(`Imported: ${product.title || product.name}`);
+    } catch {
+      setImportMessage('Failed to import product.');
+    }
+  };
+
   // Filter items by search
   const filteredItems = items.filter(item => {
     const q = search.toLowerCase();
@@ -154,6 +189,9 @@ export default function InventoryList() {
             Import CSV
             <input type="file" accept=".csv" onChange={handleImportCSV} style={{ display: 'none' }} disabled={importing} />
           </label>
+          <button className="btn btn-outline-info" onClick={handleImportFromAPI} disabled={apiLoading}>
+            {apiLoading ? 'Loading...' : 'Import from API'}
+          </button>
           <Link to="/inventory/add" className="btn btn-success">
             Add Item
           </Link>
@@ -230,6 +268,52 @@ export default function InventoryList() {
           )}
         </tbody>
       </table>
+      {showApiModal && (
+        <div className="modal fade show d-block" tabIndex="-1" style={{ background: 'rgba(0,0,0,0.4)' }}>
+          <div className="modal-dialog modal-lg modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Import Products from API</h5>
+                <button type="button" className="btn-close" aria-label="Close" onClick={() => setShowApiModal(false)}></button>
+              </div>
+              <div className="modal-body">
+                {apiError && <div className="alert alert-danger">{apiError}</div>}
+                <div className="table-responsive">
+                  <table className="table table-bordered">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Price</th>
+                        <th>Description</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {apiProducts.map((p, i) => (
+                        <tr key={p.id || i}>
+                          <td>{p.title || p.name}</td>
+                          <td>{p.category}</td>
+                          <td>{p.price}</td>
+                          <td style={{ maxWidth: 200 }}>{p.description?.slice(0, 60)}...</td>
+                          <td>
+                            <button className="btn btn-sm btn-primary" onClick={() => handleImportProduct(p)}>
+                              Import
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setShowApiModal(false)}>Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

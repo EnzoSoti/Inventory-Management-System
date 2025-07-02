@@ -13,9 +13,11 @@ import Transactions from './pages/Transactions';
 import NavBar from './components/NavBar';
 import Suppliers from './pages/Suppliers';
 import { ThemeProvider } from './context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 function AppRoutes() {
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   return (
     <Routes>
@@ -44,6 +46,7 @@ function AppRoutes() {
 
 function App() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   return (
     <ThemeProvider>
       <Router>

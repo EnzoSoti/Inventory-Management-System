@@ -3,15 +3,23 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { FaSun, FaMoon } from 'react-icons/fa';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 
 export default function NavBar() {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
+  const { t } = useTranslation();
 
   const handleLogout = async () => {
     await logout();
     navigate('/login');
+  };
+
+  const handleLanguageChange = (lng) => {
+    i18n.changeLanguage(lng);
+    localStorage.setItem('lng', lng);
   };
 
   useEffect(() => {
@@ -38,12 +46,21 @@ export default function NavBar() {
         </div>
       </div>
       <div className="d-flex align-items-center gap-2">
-        <button className="btn btn-outline-secondary d-flex align-items-center" onClick={toggleTheme} title="Toggle theme" data-bs-toggle="tooltip" aria-label="Toggle dark or light mode">
+        <div className="dropdown me-2">
+          <button className="btn btn-outline-secondary dropdown-toggle" type="button" id="langDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+            {i18n.language === 'es' ? 'ES' : 'EN'}
+          </button>
+          <ul className="dropdown-menu" aria-labelledby="langDropdown">
+            <li><button className="dropdown-item" onClick={() => handleLanguageChange('en')}>EN - English</button></li>
+            <li><button className="dropdown-item" onClick={() => handleLanguageChange('es')}>ES - Español</button></li>
+          </ul>
+        </div>
+        <button className="btn btn-outline-secondary d-flex align-items-center" onClick={toggleTheme} title={t('theme_switcher')} data-bs-toggle="tooltip" aria-label={t('theme_switcher')}>
           {theme === 'dark' ? <FaSun className="me-1" /> : <FaMoon className="me-1" />}
           <span className="d-none d-md-inline">{theme === 'dark' ? 'Light' : 'Dark'} Mode</span>
         </button>
-        <button className="btn btn-outline-danger ms-2" onClick={handleLogout} title="Logout" data-bs-toggle="tooltip" aria-label="Logout">
-          Logout
+        <button className="btn btn-outline-danger ms-2" onClick={handleLogout} title={t('logout')} data-bs-toggle="tooltip" aria-label={t('logout')}>
+          {t('logout')}
         </button>
       </div>
     </nav>

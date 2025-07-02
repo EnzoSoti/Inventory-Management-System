@@ -299,3 +299,30 @@ body.dark-theme {
   outline: 2px solid var(--accent-color) !important;
   outline-offset: 2px;
 }
+
+/* Custom transition for hover effects */
+.transition-all {
+  transition: all 0.3s ease;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Optional: Ensure the modal backdrop has a smooth fade */
+.modal.fade .modal-dialog {
+  transition: transform 0.3s ease-out;
+  transform: translateY(-50px);
+}
+
+.modal.show .modal-dialog {
+  transform: translateY(0);
+}
+
+/* Ensure text remains readable */
+.text-white {
+  color: #fff !important;
+}
+
+

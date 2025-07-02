@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { addInventoryItem } from '../firebase/firestore';
+import { addInventoryItem, fetchSuppliers } from '../firebase/firestore';
 import { FaArrowLeft, FaPlus, FaSpinner } from 'react-icons/fa';
 import '../styles/global.css';
 import QrBarcodeScanner from 'react-qr-barcode-scanner';
@@ -18,6 +18,8 @@ export default function AddItem() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const [showScanner, setShowScanner] = useState(false);
+  const [suppliers, setSuppliers] = useState([]);
+  const [customSupplier, setCustomSupplier] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -34,23 +36,34 @@ export default function AddItem() {
     }
   };
 
+  useEffect(() => {
+    async function loadSuppliers() {
+      try {
+        const data = await fetchSuppliers();
+        setSuppliers(data);
+      } catch (e) {
+        // Optionally handle error
+      }
+    }
+    loadSuppliers();
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-
     const quantity = Number(itemData.quantity);
     const price = Number(itemData.price);
-
+    let supplierValue = itemData.supplier === '__custom__' ? customSupplier : itemData.supplier;
     if (quantity < 0 || price < 0) {
       setError("Quantity and Price cannot be negative.");
       setLoading(false);
       return;
     }
-
     try {
       await addInventoryItem({
         ...itemData,
+        supplier: supplierValue,
         quantity,
         price,
         lastUpdated: new Date().toISOString()
@@ -176,14 +189,28 @@ export default function AddItem() {
             </div>
             <div className="mb-3">
               <label className="form-label">Supplier</label>
-              <input
-                type="text"
+              <select
                 name="supplier"
-                className="form-control"
+                className="form-control mb-2"
                 value={itemData.supplier}
-                onChange={handleChange}
+                onChange={e => setItemData(prev => ({ ...prev, supplier: e.target.value }))}
                 disabled={loading}
-              />
+              >
+                {suppliers.map(supplier => (
+                  <option key={supplier.id} value={supplier.name}>{supplier.name}</option>
+                ))}
+                <option value="__custom__">Other (Enter manually)</option>
+              </select>
+              {itemData.supplier === '__custom__' && (
+                <input
+                  type="text"
+                  className="form-control mt-2"
+                  placeholder="Enter supplier name"
+                  value={customSupplier}
+                  onChange={e => setCustomSupplier(e.target.value)}
+                  disabled={loading}
+                />
+              )}
             </div>
             <div className="d-flex gap-2">
               <button type="submit" className="btn btn-primary" disabled={loading}>
