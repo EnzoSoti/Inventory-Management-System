@@ -10,6 +10,7 @@ import Categories from './pages/Categories';
 import EditItem from './pages/EditItem';
 import Reports from './pages/Reports';
 import Transactions from './pages/Transactions';
+import NavBar from './components/NavBar';
 
 function AppRoutes() {
   const { user } = useAuth();
@@ -39,8 +40,10 @@ function AppRoutes() {
 }
 
 function App() {
+  const { user } = useAuth();
   return (
     <Router>
+      {user && <NavBar />}
       <AppRoutes />
     </Router>
   );

@@ -41,11 +41,13 @@ export default function InventoryList() {
   if (error) return <div className="container mt-5 alert alert-danger">Error: {error}</div>;
 
   return (
-    <div className="container mt-5">
+    <div className="container py-5 fade-in">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>Inventory List</h2>
-        <Link to="/inventory/add" className="btn btn-primary">
-          Add New Item
+        <h1 className="fw-bold" style={{ color: 'var(--primary-color)' }}>
+          Inventory
+        </h1>
+        <Link to="/inventory/add" className="btn btn-success">
+          Add Item
         </Link>
       </div>
       <table className="table table-bordered table-striped">

@@ -23,11 +23,13 @@ export default function Transactions() {
   }, []);
 
   return (
-    <div className="container mt-5">
+    <div className="container py-5 fade-in">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>View Transactions</h2>
-        <Link to="/dashboard" className="btn btn-secondary">
-          Back to Dashboard
+        <h1 className="fw-bold" style={{ color: 'var(--primary-color)' }}>
+          Transactions
+        </h1>
+        <Link to="/inventory" className="btn btn-outline-primary">
+          Back to Inventory
         </Link>
       </div>
       <div className="card shadow p-4">
