@@ -115,16 +115,16 @@ export default function InventoryList() {
   const sendLowStockAlert = async (item) => {
     try {
       await emailjs.send(
-        'YOUR_SERVICE_ID',
-        'YOUR_TEMPLATE_ID',
+        'service_cb5n3yd',
+        'template_3211ltb',
         {
           item_name: item.name,
           item_category: item.category,
           item_quantity: item.quantity,
           item_supplier: item.supplier,
-          to_email: 'YOUR_EMAIL@example.com',
+          to_email: 'parane.enzo@gmail.com',
         },
-        'YOUR_USER_ID'
+        '1flDZCxvwS892-bij'
       );
       setImportMessage(`Low stock alert sent for ${item.name}`);
     } catch (e) {
