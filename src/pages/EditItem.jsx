@@ -18,6 +18,8 @@ export default function EditItem() {
   const { itemId } = useParams();
   const [suppliers, setSuppliers] = useState([]);
   const [customSupplier, setCustomSupplier] = useState('');
+  const supplierOptions = suppliers.map(s => s.name);
+  const showCurrentSupplier = itemData.supplier && !supplierOptions.includes(itemData.supplier) && itemData.supplier !== '__custom__';
 
   useEffect(() => {
     const loadItem = async () => {
@@ -155,6 +157,9 @@ export default function EditItem() {
               onChange={e => setItemData(prev => ({ ...prev, supplier: e.target.value }))}
               disabled={loading}
             >
+              {showCurrentSupplier && (
+                <option value={itemData.supplier}>{itemData.supplier} (Current)</option>
+              )}
               {suppliers.map(supplier => (
                 <option key={supplier.id} value={supplier.name}>{supplier.name}</option>
               ))}
