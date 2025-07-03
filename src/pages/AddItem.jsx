@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { addInventoryItem, fetchSuppliers } from '../firebase/firestore';
+import { addInventoryItem, fetchSuppliers, fetchCategories } from '../firebase/firestore';
 import { FaArrowLeft, FaPlus, FaSpinner } from 'react-icons/fa';
 import '../styles/global.css';
 import QrBarcodeScanner from 'react-qr-barcode-scanner';
@@ -20,6 +20,7 @@ export default function AddItem() {
   const [showScanner, setShowScanner] = useState(false);
   const [suppliers, setSuppliers] = useState([]);
   const [customSupplier, setCustomSupplier] = useState('');
+  const [categories, setCategories] = useState([]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -45,7 +46,16 @@ export default function AddItem() {
         // Optionally handle error
       }
     }
+    async function loadCategories() {
+      try {
+        const data = await fetchCategories();
+        setCategories(data);
+      } catch (e) {
+        // Optionally handle error
+      }
+    }
     loadSuppliers();
+    loadCategories();
   }, []);
 
   const handleSubmit = async (e) => {
@@ -147,12 +157,9 @@ export default function AddItem() {
                     disabled={loading}
                   >
                     <option value="">Select a category</option>
-                    <option value="Electronics">Electronics</option>
-                    <option value="Clothing">Clothing</option>
-                    <option value="Furniture">Furniture</option>
-                    <option value="Groceries">Groceries</option>
-                    <option value="Office Supplies">Office Supplies</option>
-                    <option value="Other">Other</option>
+                    {categories.map(cat => (
+                      <option key={cat.id} value={cat.name}>{cat.name}</option>
+                    ))}
                   </select>
                 </div>
               </div>
