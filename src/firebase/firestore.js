@@ -51,14 +51,42 @@ async function logAudit(itemId, action, data) {
 export const addInventoryItem = async (itemData) => {
   const docRef = await addDoc(collection(db, INVENTORY_COLLECTION), itemData);
   await logAudit(docRef.id, 'add', itemData);
+  // Automatically log a transaction for initial stock
+  const auth = getAuth();
+  const user = auth.currentUser;
+  if (itemData.quantity && itemData.quantity > 0) {
+    await addTransaction({
+      itemId: docRef.id,
+      type: 'in',
+      quantity: itemData.quantity,
+      timestamp: new Date().toISOString(),
+      userId: user ? user.uid : null
+    });
+  }
   return docRef.id;
 };
 
 // Update an inventory item
 export const updateInventoryItem = async (itemId, itemData) => {
   const docRef = doc(db, INVENTORY_COLLECTION, itemId);
+  // Fetch current item to compare quantity
+  const currentSnap = await getDoc(docRef);
+  const currentData = currentSnap.exists() ? currentSnap.data() : {};
   await updateDoc(docRef, itemData);
   await logAudit(itemId, 'edit', itemData);
+  // Automatically log a transaction if quantity changed
+  if (typeof itemData.quantity === 'number' && typeof currentData.quantity === 'number' && itemData.quantity !== currentData.quantity) {
+    const diff = itemData.quantity - currentData.quantity;
+    const auth = getAuth();
+    const user = auth.currentUser;
+    await addTransaction({
+      itemId,
+      type: diff > 0 ? 'in' : 'out',
+      quantity: Math.abs(diff),
+      timestamp: new Date().toISOString(),
+      userId: user ? user.uid : null
+    });
+  }
 };
 
 // Delete an inventory item
@@ -102,7 +130,10 @@ export const fetchTransactions = async () => {
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
-// (Add, update, delete transaction logic can be added as needed)
+export const addTransaction = async (transactionData) => {
+  const docRef = await addDoc(collection(db, "transactions"), transactionData);
+  return docRef.id;
+};
 
 // === REPORTS PLACEHOLDER ===
 // Future: Add aggregation functions for reports

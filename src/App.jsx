@@ -16,6 +16,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { Toaster } from 'react-hot-toast';
 import { useEffect } from 'react';
+import AddTransaction from './pages/AddTransaction';
 
 function AppRoutes() {
   const { user } = useAuth();
@@ -41,6 +42,7 @@ function AppRoutes() {
       <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
       <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
       <Route path="/suppliers" element={<ProtectedRoute><Suppliers /></ProtectedRoute>} />
+      <Route path="/add-transaction" element={<ProtectedRoute><AddTransaction /></ProtectedRoute>} />
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );

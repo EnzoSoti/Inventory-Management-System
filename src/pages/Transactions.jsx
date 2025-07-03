@@ -29,9 +29,14 @@ export default function Transactions() {
         <h1 className="fw-bold" style={{ color: 'var(--primary-color)' }}>
           Transactions
         </h1>
-        <Link to="/inventory" className="btn btn-outline-primary">
-          Back to Inventory
-        </Link>
+        <div>
+          <Link to="/add-transaction" className="btn btn-primary me-2">
+            Add Transaction
+          </Link>
+          <Link to="/inventory" className="btn btn-outline-primary">
+            Back to Inventory
+          </Link>
+        </div>
       </div>
       <div className="card shadow p-4">
         {loading ? (
@@ -52,10 +57,10 @@ export default function Transactions() {
               ) : (
                 transactions.map(tx => (
                   <tr key={tx.id}>
-                    <td>{tx.date || '-'}</td>
-                    <td>{tx.description || '-'}</td>
-                    <td>{typeof tx.amount === 'number' ? `₱${tx.amount.toLocaleString()}` : '-'}</td>
-                    <td>{tx.user || '-'}</td>
+                    <td>{tx.timestamp || '-'}</td>
+                    <td>{tx.type || '-'}</td>
+                    <td>{typeof tx.quantity === 'number' ? tx.quantity : '-'}</td>
+                    <td>{tx.userId || '-'}</td>
                   </tr>
                 ))
               )}
