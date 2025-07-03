@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchCategories, addCategory, updateCategory, deleteCategory } from '../firebase/firestore';
+import toast from 'react-hot-toast';
+import { message, Modal } from 'antd';
 
 export default function Categories() {
   const [categories, setCategories] = useState([]);
@@ -33,8 +35,9 @@ export default function Categories() {
       await addCategory({ name: newCategory });
       setNewCategory('');
       loadCategories();
+      toast.success('Category added!');
     } catch {
-      setError('Failed to add category.');
+      message.error('Failed to add category.');
     }
   };
 
@@ -50,19 +53,29 @@ export default function Categories() {
       setEditId(null);
       setEditValue('');
       loadCategories();
+      toast.success('Category updated!');
     } catch {
-      setError('Failed to update category.');
+      message.error('Failed to update category.');
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this category?')) return;
-    try {
-      await deleteCategory(id);
-      loadCategories();
-    } catch {
-      setError('Failed to delete category.');
-    }
+    Modal.confirm({
+      title: 'Delete this category?',
+      content: 'Are you sure you want to delete this category?',
+      okText: 'Delete',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        try {
+          await deleteCategory(id);
+          loadCategories();
+          toast.success('Category deleted!');
+        } catch {
+          message.error('Failed to delete category.');
+        }
+      },
+    });
   };
 
   return (
@@ -76,7 +89,6 @@ export default function Categories() {
         </Link>
       </div>
       <div className="card shadow p-4">
-        {error && <div className="alert alert-danger">{error}</div>}
         <form className="d-flex mb-4" onSubmit={handleAdd}>
           <input
             type="text"

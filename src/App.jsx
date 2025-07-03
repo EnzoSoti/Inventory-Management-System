@@ -14,6 +14,7 @@ import NavBar from './components/NavBar';
 import Suppliers from './pages/Suppliers';
 import { ThemeProvider } from './context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import { Toaster } from 'react-hot-toast';
 
 function AppRoutes() {
   const { user } = useAuth();
@@ -52,6 +53,7 @@ function App() {
       <Router>
         {user && <NavBar />}
         <AppRoutes />
+        <Toaster position="top-right" />
       </Router>
     </ThemeProvider>
   );

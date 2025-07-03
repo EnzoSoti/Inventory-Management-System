@@ -4,6 +4,8 @@ import { fetchInventoryItems, deleteInventoryItem, addInventoryItem } from "../f
 import Papa from 'papaparse';
 import emailjs from 'emailjs-com';
 import { fetchExternalProducts } from '../api/externalProducts';
+import toast from 'react-hot-toast';
+import { message, Modal, Spin } from 'antd';
 
 function exportToCSV(items) {
   if (!items.length) return;
@@ -58,16 +60,23 @@ export default function InventoryList() {
   }, []);
 
   const handleDelete = async (itemId) => {
-    if (window.confirm("Are you sure you want to delete this item?")) {
-      try {
-        await deleteInventoryItem(itemId);
-        // Refresh the list after deletion
-        await loadItems(); 
-      } catch (err) {
-        alert("Failed to delete item.");
-        console.error("Delete failed:", err);
-      }
-    }
+    Modal.confirm({
+      title: 'Delete this item?',
+      content: 'Are you sure you want to delete this item?',
+      okText: 'Delete',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        try {
+          await deleteInventoryItem(itemId);
+          await loadItems();
+          toast.success('Item deleted!');
+        } catch (err) {
+          message.error('Failed to delete item.');
+          console.error('Delete failed:', err);
+        }
+      },
+    });
   };
 
   const handleImportCSV = async (e) => {
@@ -81,7 +90,6 @@ export default function InventoryList() {
       complete: async (results) => {
         let success = 0, fail = 0;
         for (const row of results.data) {
-          // Basic validation
           if (!row.Name || !row.Category || !row.Quantity) {
             fail++;
             continue;
@@ -101,12 +109,12 @@ export default function InventoryList() {
             fail++;
           }
         }
-        setImportMessage(`Imported: ${success} items. Failed: ${fail} rows.`);
+        toast.success(`Imported: ${success} items. Failed: ${fail} rows.`);
         setImporting(false);
         loadItems();
       },
       error: () => {
-        setImportMessage("Failed to parse CSV file.");
+        message.error('Failed to parse CSV file.');
         setImporting(false);
       }
     });
@@ -126,9 +134,9 @@ export default function InventoryList() {
         },
         '1flDZCxvwS892-bij'
       );
-      setImportMessage(`Low stock alert sent for ${item.name}`);
+      toast.success(`Low stock alert sent for ${item.name}`);
     } catch (e) {
-      setImportMessage('Failed to send alert.');
+      message.error('Failed to send alert.');
     }
   };
 
@@ -140,7 +148,7 @@ export default function InventoryList() {
       setApiProducts(products);
       setShowApiModal(true);
     } catch (e) {
-      setApiError("Failed to fetch products from external API.");
+      message.error('Failed to fetch products from external API.');
     }
     setApiLoading(false);
   };
@@ -156,9 +164,9 @@ export default function InventoryList() {
         description: product.description || '',
         lastUpdated: new Date().toISOString()
       });
-      setImportMessage(`Imported: ${product.title || product.name}`);
+      toast.success(`Imported: ${product.title || product.name}`);
     } catch {
-      setImportMessage('Failed to import product.');
+      message.error('Failed to import product.');
     }
   };
 
@@ -197,9 +205,7 @@ export default function InventoryList() {
           </Link>
         </div>
         {importMessage && (
-          <div className={`alert ${importMessage.includes('Failed') ? 'alert-warning' : 'alert-success'} mt-2`}>
-            {importMessage}
-          </div>
+          <></>
         )}
       </div>
       <div className="mb-3">
@@ -269,50 +275,43 @@ export default function InventoryList() {
         </tbody>
       </table>
       {showApiModal && (
-        <div className="modal fade show d-block" tabIndex="-1" style={{ background: 'rgba(0,0,0,0.4)' }}>
-          <div className="modal-dialog modal-lg modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Import Products from API</h5>
-                <button type="button" className="btn-close" aria-label="Close" onClick={() => setShowApiModal(false)}></button>
-              </div>
-              <div className="modal-body">
-                {apiError && <div className="alert alert-danger">{apiError}</div>}
-                <div className="table-responsive">
-                  <table className="table table-bordered">
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Category</th>
-                        <th>Price</th>
-                        <th>Description</th>
-                        <th>Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {apiProducts.map((p, i) => (
-                        <tr key={p.id || i}>
-                          <td>{p.title || p.name}</td>
-                          <td>{p.category}</td>
-                          <td>{p.price}</td>
-                          <td style={{ maxWidth: 200 }}>{p.description?.slice(0, 60)}...</td>
-                          <td>
-                            <button className="btn btn-sm btn-primary" onClick={() => handleImportProduct(p)}>
-                              Import
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button className="btn btn-secondary" onClick={() => setShowApiModal(false)}>Close</button>
-              </div>
-            </div>
+        <Modal
+          title="Import Products from API"
+          open={showApiModal}
+          onCancel={() => setShowApiModal(false)}
+          footer={<button className="btn btn-secondary" onClick={() => setShowApiModal(false)}>Close</button>}
+          width={900}
+        >
+          {apiError && message.error(apiError)}
+          <div className="table-responsive">
+            <table className="table table-bordered">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Category</th>
+                  <th>Price</th>
+                  <th>Description</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {apiProducts.map((p, i) => (
+                  <tr key={p.id || i}>
+                    <td>{p.title || p.name}</td>
+                    <td>{p.category}</td>
+                    <td>{p.price}</td>
+                    <td style={{ maxWidth: 200 }}>{p.description?.slice(0, 60)}...</td>
+                    <td>
+                      <button className="btn btn-sm btn-primary" onClick={() => handleImportProduct(p)}>
+                        Import
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

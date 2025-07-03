@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { fetchInventoryItem, updateInventoryItem, fetchSuppliers } from '../firebase/firestore';
+import toast from 'react-hot-toast';
+import { message } from 'antd';
 
 export default function EditItem() {
   const [itemData, setItemData] = useState({
@@ -57,7 +59,7 @@ export default function EditItem() {
     const price = Number(itemData.price);
     let supplierValue = itemData.supplier === '__custom__' ? customSupplier : itemData.supplier;
     if (quantity < 0 || price < 0) {
-      setError("Quantity and Price cannot be negative.");
+      message.error("Quantity and Price cannot be negative.");
       setLoading(false);
       return;
     }
@@ -69,9 +71,10 @@ export default function EditItem() {
         quantity,
         price,
       });
+      toast.success('Item updated successfully!');
       navigate('/inventory');
     } catch (err) {
-      setError('Failed to update item. Please try again.');
+      message.error('Failed to update item. Please try again.');
       console.error(err);
       setLoading(false);
     }
@@ -89,7 +92,6 @@ export default function EditItem() {
         </Link>
       </div>
       <div className="card shadow p-4">
-        {error && <div className="alert alert-danger">{error}</div>}
         <form onSubmit={handleSubmit}>
           <div className="mb-3">
             <label className="form-label">Item Name</label>

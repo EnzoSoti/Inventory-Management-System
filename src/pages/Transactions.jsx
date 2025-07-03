@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchTransactions } from '../firebase/firestore';
+import { message } from 'antd';
 
 export default function Transactions() {
   const [transactions, setTransactions] = useState([]);
@@ -15,7 +16,7 @@ export default function Transactions() {
         setTransactions(data);
         setError('');
       } catch {
-        setError('Failed to load transactions.');
+        message.error('Failed to load transactions.');
       }
       setLoading(false);
     };
@@ -33,7 +34,6 @@ export default function Transactions() {
         </Link>
       </div>
       <div className="card shadow p-4">
-        {error && <div className="alert alert-danger">{error}</div>}
         {loading ? (
           <div>Loading...</div>
         ) : (

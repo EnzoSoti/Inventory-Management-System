@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { fetchSuppliers, addSupplier, updateSupplier, deleteSupplier } from "../firebase/firestore";
+import toast from 'react-hot-toast';
+import { message, Modal } from 'antd';
 
 export default function Suppliers() {
   const [suppliers, setSuppliers] = useState([]);
@@ -30,15 +32,17 @@ export default function Suppliers() {
     try {
       if (editId) {
         await updateSupplier(editId, form);
+        toast.success('Supplier updated!');
       } else {
         await addSupplier(form);
+        toast.success('Supplier added!');
       }
       setForm({ name: "", contact: "", email: "", phone: "", address: "", notes: "" });
       setEditId(null);
       setShowForm(false);
       loadSuppliers();
     } catch {
-      setError("Failed to save supplier.");
+      message.error('Failed to save supplier.');
     }
   };
 
@@ -49,10 +53,18 @@ export default function Suppliers() {
   };
 
   const handleDelete = async id => {
-    if (window.confirm("Delete this supplier?")) {
-      await deleteSupplier(id);
-      loadSuppliers();
-    }
+    Modal.confirm({
+      title: 'Delete this supplier?',
+      content: 'Are you sure you want to delete this supplier?',
+      okText: 'Delete',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        await deleteSupplier(id);
+        loadSuppliers();
+        toast.success('Supplier deleted!');
+      },
+    });
   };
 
   return (
@@ -65,7 +77,6 @@ export default function Suppliers() {
           Add Supplier
         </button>
       </div>
-      {error && <div className="alert alert-danger">{error}</div>}
       {showForm && (
         <div className="card mb-4 p-4">
           <form onSubmit={handleSubmit} className="row g-3">

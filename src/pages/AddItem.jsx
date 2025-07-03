@@ -4,6 +4,8 @@ import { addInventoryItem, fetchSuppliers, fetchCategories } from '../firebase/f
 import { FaArrowLeft, FaPlus, FaSpinner } from 'react-icons/fa';
 import '../styles/global.css';
 import QrBarcodeScanner from 'react-qr-barcode-scanner';
+import toast from 'react-hot-toast';
+import { message } from 'antd';
 
 export default function AddItem() {
   const [itemData, setItemData] = useState({
@@ -66,7 +68,7 @@ export default function AddItem() {
     const price = Number(itemData.price);
     let supplierValue = itemData.supplier === '__custom__' ? customSupplier : itemData.supplier;
     if (quantity < 0 || price < 0) {
-      setError("Quantity and Price cannot be negative.");
+      message.error("Quantity and Price cannot be negative.");
       setLoading(false);
       return;
     }
@@ -78,9 +80,10 @@ export default function AddItem() {
         price,
         lastUpdated: new Date().toISOString()
       });
+      toast.success('Item added successfully!');
       navigate('/inventory');
     } catch (err) {
-      setError('Failed to add item. Please try again.');
+      message.error('Failed to add item. Please try again.');
       console.error(err);
       setLoading(false);
     }
@@ -115,14 +118,6 @@ export default function AddItem() {
                 style={{ width: '100%' }}
               />
               <button className="btn btn-secondary mt-2" onClick={() => setShowScanner(false)}>Close Scanner</button>
-            </div>
-          )}
-          {error && (
-            <div className="alert alert-danger d-flex align-items-center" role="alert">
-              <div className="me-2">
-                <i className="bi bi-exclamation-triangle-fill"></i>
-              </div>
-              <div>{error}</div>
             </div>
           )}
           <form onSubmit={handleSubmit}>

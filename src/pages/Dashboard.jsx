@@ -2,12 +2,15 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth } from "../context/AuthContext";
 import WelcomeModal from '../components/WelcomeModal';
 import DashboardCard from '../components/DashboardCard';
+import toast from 'react-hot-toast';
+import { message } from 'antd';
 
 export default function Dashboard() {
   const { user } = useAuth();
   const [showWelcome, setShowWelcome] = useState(false);
   const getStartedRef = useRef();
   const modalRef = useRef();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     if (!localStorage.getItem('onboarded')) {
@@ -20,6 +23,13 @@ export default function Dashboard() {
     setShowWelcome(false);
     if (getStartedRef.current) getStartedRef.current.focus();
   };
+
+  // Demo handlers
+  const showToast = () => toast.success('This is a React Hot Toast notification!');
+  const showAntdMessage = () => message.info('This is an Ant Design message!');
+  const showAntdModal = () => setIsModalOpen(true);
+  const handleModalOk = () => setIsModalOpen(false);
+  const handleModalCancel = () => setIsModalOpen(false);
 
   return (
     <div className="container py-5">
