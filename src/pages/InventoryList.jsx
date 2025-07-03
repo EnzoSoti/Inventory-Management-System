@@ -41,6 +41,9 @@ export default function InventoryList() {
   const [showApiModal, setShowApiModal] = useState(false);
   const [apiLoading, setApiLoading] = useState(false);
   const [apiError, setApiError] = useState("");
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const loadItems = async () => {
     try {
@@ -180,6 +183,55 @@ export default function InventoryList() {
     );
   });
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+  const paginatedItems = filteredItems.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    setSelectedItems([]); // Clear selection on page change
+  };
+
+  // Selection handlers
+  const handleSelectItem = (id) => {
+    setSelectedItems((prev) =>
+      prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedItems.length === paginatedItems.length) {
+      setSelectedItems([]);
+    } else {
+      setSelectedItems(paginatedItems.map((item) => item.id));
+    }
+  };
+
+  const handleBatchDelete = async () => {
+    Modal.confirm({
+      title: `Delete ${selectedItems.length} selected item(s)?`,
+      content: 'Are you sure you want to delete the selected items?',
+      okText: 'Delete',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        try {
+          for (const id of selectedItems) {
+            await deleteInventoryItem(id);
+          }
+          setSelectedItems([]);
+          await loadItems();
+          toast.success(`${selectedItems.length} item(s) deleted!`);
+        } catch (err) {
+          message.error('Failed to delete selected items.');
+        }
+      },
+    });
+  };
+
   if (loading) return <div className="container mt-5"><p>Loading inventory...</p></div>;
   if (error) return <div className="container mt-5 alert alert-danger">Error: {error}</div>;
 
@@ -203,6 +255,11 @@ export default function InventoryList() {
           <Link to="/inventory/add" className="btn btn-success">
             Add Item
           </Link>
+          {selectedItems.length > 0 && (
+            <button className="btn btn-danger" onClick={handleBatchDelete}>
+              Delete Selected ({selectedItems.length})
+            </button>
+          )}
         </div>
         {importMessage && (
           <></>
@@ -227,6 +284,14 @@ export default function InventoryList() {
       <table className="table table-bordered table-striped">
         <thead className="table-dark">
           <tr>
+            <th>
+              <input
+                type="checkbox"
+                checked={selectedItems.length === paginatedItems.length && paginatedItems.length > 0}
+                onChange={handleSelectAll}
+                aria-label="Select all items on page"
+              />
+            </th>
             <th>Name</th>
             <th>Category</th>
             <th>Quantity</th>
@@ -236,15 +301,23 @@ export default function InventoryList() {
           </tr>
         </thead>
         <tbody>
-          {filteredItems.length === 0 ? (
+          {paginatedItems.length === 0 ? (
             <tr>
-              <td colSpan="6" className="text-center">
+              <td colSpan="7" className="text-center">
                 No items found.
               </td>
             </tr>
           ) : (
-            filteredItems.map(item => (
+            paginatedItems.map(item => (
               <tr key={item.id}>
+                <td>
+                  <input
+                    type="checkbox"
+                    checked={selectedItems.includes(item.id)}
+                    onChange={() => handleSelectItem(item.id)}
+                    aria-label={`Select ${item.name}`}
+                  />
+                </td>
                 <td>{item.name}</td>
                 <td>{item.category}</td>
                 <td>
@@ -276,6 +349,28 @@ export default function InventoryList() {
           )}
         </tbody>
       </table>
+      {/* Pagination controls */}
+      {totalPages > 1 && (
+        <nav aria-label="Inventory pagination">
+          <ul className="pagination justify-content-center">
+            <li className={`page-item${currentPage === 1 ? ' disabled' : ''}`}>
+              <button className="page-link" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}>
+                Previous
+              </button>
+            </li>
+            {Array.from({ length: totalPages }, (_, i) => (
+              <li key={i + 1} className={`page-item${currentPage === i + 1 ? ' active' : ''}`}>
+                <button className="page-link" onClick={() => handlePageChange(i + 1)}>{i + 1}</button>
+              </li>
+            ))}
+            <li className={`page-item${currentPage === totalPages ? ' disabled' : ''}`}>
+              <button className="page-link" onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}>
+                Next
+              </button>
+            </li>
+          </ul>
+        </nav>
+      )}
       {showApiModal && (
         <Modal
           title="Import Products from API"
