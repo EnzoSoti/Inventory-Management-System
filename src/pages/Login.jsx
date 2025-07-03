@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase/config";
+import toast from 'react-hot-toast';
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -16,6 +17,12 @@ export default function Login() {
     setError("");
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      toast.success('Welcome back!', {
+        position: 'top-center',
+        style: { fontSize: '1.5rem', padding: '2rem 3rem' },
+        iconTheme: { primary: '#007bff', secondary: '#fff' },
+        duration: 3000
+      });
       navigate("/dashboard", { replace: true });
     } catch (err) {
       setError("Invalid email or password.");

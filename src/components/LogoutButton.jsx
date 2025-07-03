@@ -1,6 +1,8 @@
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { Modal } from 'antd';
 
 export default function LogoutButton() {
   const { logout } = useAuth();
@@ -8,8 +10,23 @@ export default function LogoutButton() {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    await logout();
-    navigate('/login');
+    Modal.confirm({
+      title: 'Are you sure you want to logout?',
+      okText: 'Logout',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      centered: true,
+      onOk: async () => {
+        await logout();
+        toast('You have been logged out.', {
+          position: 'top-center',
+          style: { fontSize: '1.5rem', padding: '2rem 3rem' },
+          icon: '👋',
+          duration: 3000
+        });
+        navigate('/login');
+      }
+    });
   };
 
   return (
