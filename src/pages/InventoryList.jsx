@@ -221,6 +221,8 @@ export default function InventoryList() {
       <div className="mb-2 d-flex gap-3 align-items-center">
         <span><span className="badge bg-danger">Out of Stock</span></span>
         <span><span className="badge bg-warning text-dark">Low Stock (≤5)</span></span>
+        <span><span className="badge bg-success">In Stock (&gt;5)</span></span>
+        <span><span className="badge bg-secondary">Imported from API</span></span>
       </div>
       <table className="table table-bordered table-striped">
         <thead className="table-dark">

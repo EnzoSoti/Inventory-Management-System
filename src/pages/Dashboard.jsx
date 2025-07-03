@@ -31,6 +31,8 @@ export default function Dashboard() {
   const handleModalOk = () => setIsModalOpen(false);
   const handleModalCancel = () => setIsModalOpen(false);
 
+  const username = user?.email?.split('@')[0];
+
   return (
     <div className="container py-5">
       {/* Onboarding Welcome Modal */}
@@ -42,7 +44,7 @@ export default function Dashboard() {
       />
       <div className="text-center mb-5 animate__animated animate__fadeIn">
         <h1 className="fw-bold mb-3" style={{ color: 'var(--primary-color)' }}>
-          Welcome, {user?.email}
+          Welcome, {username}
         </h1>
         <p className="lead text-muted mb-0">Your Admin Dashboard</p>
       </div>
