@@ -15,6 +15,7 @@ import Suppliers from './pages/Suppliers';
 import { ThemeProvider } from './context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { Toaster } from 'react-hot-toast';
+import { useEffect } from 'react';
 
 function AppRoutes() {
   const { user } = useAuth();
@@ -46,8 +47,22 @@ function AppRoutes() {
 }
 
 function App() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { t } = useTranslation();
+
+  // automatically logout when the page is closed
+  // useEffect(() => {
+  //   const handleBeforeUnload = () => {
+  //     if (user) {
+  //       logout();
+  //     }
+  //   };
+  //   window.addEventListener('beforeunload', handleBeforeUnload);
+  //   return () => {
+  //     window.removeEventListener('beforeunload', handleBeforeUnload);
+  //   };
+  // }, [user, logout]);
+
   return (
     <ThemeProvider>
       <Router>
